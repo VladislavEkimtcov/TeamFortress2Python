@@ -7,7 +7,7 @@ import sys
 import copy
 from math import sqrt
 
-field_size = 5
+field_size = 3
 
 
 def longest(lst):
@@ -74,7 +74,7 @@ class Hero(object):
         target = 0
         for i in range(len(enemies)):
             # use Pythagorean theorem to locate the closest enemy
-            vector_distance = sqrt((enemies[i][0]-self_location[0])**2+(enemies[i][1]-self_location[1])**2)
+            vector_distance = sqrt((enemies[i][0] - self_location[0]) ** 2 + (enemies[i][1] - self_location[1]) ** 2)
             if vector_distance < min_distance:
                 target = i
                 min_distance = vector_distance
@@ -105,7 +105,6 @@ class Hero(object):
                 new_y = self_location[1]
         return [new_x, new_y]
 
-
     def melee_attack(self):
         shared_location = self.locate_self()
         for entity in loctracker[shared_location[0]][shared_location[1]]:
@@ -114,7 +113,55 @@ class Hero(object):
 
 
 class SpeedyBoy(Hero):
-        HP = 125
+    HP = 125
+
+    def attack(self):
+        shared_location = self.locate_self()
+        # check for enemies in cell for melee attack
+        for entity in loctracker[shared_location[0]][shared_location[1]]:
+            if entity.team != self.team:
+                self.melee_attack()
+        # shotgun attack
+        # top left
+        if shared_location[0] - 1 >= 0 and shared_location[1] - 1 >= 0:
+            for entity in loctracker[shared_location[0] - 1][shared_location[1] - 1]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # middle left
+        if shared_location[0] - 1 >= 0:
+            for entity in loctracker[shared_location[0] - 1][shared_location[1]]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # bottom left
+        if shared_location[0] - 1 >= 0 and shared_location[1] + 1 < field_size:
+            for entity in loctracker[shared_location[0] - 1][shared_location[1] + 1]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # bottom middle
+        if shared_location[1] + 1 < field_size:
+            for entity in loctracker[shared_location[0]][shared_location[1] + 1]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # bottom right
+        if shared_location[0] + 1 < field_size and shared_location[1] + 1 < field_size:
+            for entity in loctracker[shared_location[0] + 1][shared_location[1] + 1]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # right center
+        if shared_location[0] + 1 < field_size:
+            for entity in loctracker[shared_location[0] + 1][shared_location[1]]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # right top
+        if shared_location[0] + 1 < field_size and shared_location[1] - 1 >= 0:
+            for entity in loctracker[shared_location[0] + 1][shared_location[1] - 1]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
+        # top centre
+        if shared_location[1] - 1 >= 0:
+            for entity in loctracker[shared_location[0]][shared_location[1] - 1]:
+                if entity.team != self.team:
+                    entity.HP = entity.HP - 100
 
 
 # generate board
@@ -132,10 +179,8 @@ players.append(c)
 for player in players:
     player.spawn()
 
-
 print_board(loctracker)
-print(a.locate_self())
-print(a.new_location_calc(a.locate_self(), a.locate_enemy()))
 c.move(c.locate_self(), c.new_location_calc(c.locate_self(), c.locate_enemy()))
-c.melee_attack()
+print_board(loctracker)
+c.attack()
 print_board(loctracker)
