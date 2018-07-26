@@ -28,7 +28,7 @@ def print_board(board):
         for k in range(len(board_copy[i])):
             if board_copy[i][k] != []:
                 for l in range(len(board_copy[i][k])):
-                    board_copy[i][k][l] = board_copy[i][k][l].name
+                    board_copy[i][k][l] = board_copy[i][k][l].name + ":" + str(board_copy[i][k][l].HP)
     print(DataFrame(board_copy))
 
 
@@ -107,16 +107,14 @@ class Hero(object):
 
 
     def melee_attack(self):
-
+        shared_location = self.locate_self()
+        for entity in loctracker[shared_location[0]][shared_location[1]]:
+            if entity.team != self.team:
+                entity.HP = entity.HP - 65
 
 
 class SpeedyBoy(Hero):
-
-    def __init__(self, HP):
         HP = 125
-
-    def atq(self):
-        print("attacl")
 
 
 # generate board
@@ -126,10 +124,8 @@ for x in range(0, field_size):
 
 # spawn player
 players = []
-a = Hero("Red", "H1")
+a = SpeedyBoy("Red", "H1")
 players.append(a)
-b = Hero("Blue", "H2")
-players.append(b)
 c = SpeedyBoy("Blue", "S1")
 players.append(c)
 # players.append(c)
@@ -141,4 +137,5 @@ print_board(loctracker)
 print(a.locate_self())
 print(a.new_location_calc(a.locate_self(), a.locate_enemy()))
 c.move(c.locate_self(), c.new_location_calc(c.locate_self(), c.locate_enemy()))
+c.melee_attack()
 print_board(loctracker)
