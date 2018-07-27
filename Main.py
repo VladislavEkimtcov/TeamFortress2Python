@@ -61,16 +61,23 @@ class Hero(object):
             for k in range(len(loctracker[i])):
                 if loctracker[i][k] != []:
                     for element in loctracker[i][k]:
-                        if element.team != self.team or (self.HP < self.HPStart and element.team == self.team and (element.__class__.__name__ == "Healer" or element.__class__.__name__ == "HealthBox")):
+                        if element.team != self.team or (self.HP < self.HPStart and element.team == self.team and (
+                                element.__class__.__name__ == "Healer" or element.__class__.__name__ == "HealthBox") and (
+                                                                 self.__class__.__name__ != "Turret" or self.__class__.__name__ != "HealthBox")):
                             if self.__class__.__name__ == "Turret" and element.__class__.__name__ == "Infiltrator":
                                 pass
                             # 50% chance of avoiding detection
                             # healers are immune to this ability
-                            elif self.__class__.__name__ != "Healer" and element.__class__.__name__ == "Infiltrator" and ran.randint(0, 101) < 50:
+                            elif self.__class__.__name__ != "Healer" and element.__class__.__name__ == "Infiltrator" and ran.randint(
+                                    0, 101) < 50:
                                 print(element.name + " has fooled " + self.name + " about his location")
                                 enemies.append([0, 0])
                             else:
                                 enemies.append([i, k])
+                                if element.team == self.team and (
+                                        self.__class__.__name__ != "Turret" and self.__class__.__name__ != "HealthBox") and (
+                                        element.__class__.__name__ == "Healer" or element.__class__.__name__ == "HealthBox"):
+                                    print(self.name + " has considered visiting " + element.name)
         return enemies
 
     def move(self, orig_location, new_location):
@@ -132,11 +139,11 @@ class Hero(object):
                     print(self.name + " performs a melee attack on " + entity.name + " 65 HP!")
                     entity.HP = entity.HP - 65
 
-
     def attack(self, damage):
         shared_location = self.locate_self()
         # check for enemies in cell for melee attack
-        self.melee_attack()
+        if self.__class__.__name__ != "Turret" and self.__class__.__name__ != "HealthBox":
+            self.melee_attack()
         # area attack
         # top left
         if shared_location[0] - 1 >= 0 and shared_location[1] - 1 >= 0:
@@ -283,7 +290,7 @@ class Hero(object):
                 else:
                     # healthbox logic
                     # healthboxes can't overheal
-                    if entity.HP < entity.HP:
+                    if entity.HP < entity.HPStart:
                         print(self.name + " heals " + entity.name + " for 10 HP")
                         entity.HP = entity.HP + 10
         # area heal
@@ -301,7 +308,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # middle left
@@ -318,7 +325,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # bottom left
@@ -335,7 +342,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # bottom middle
@@ -352,7 +359,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # bottom right
@@ -369,7 +376,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # right center
@@ -386,7 +393,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # right top
@@ -403,7 +410,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # top centre
@@ -420,7 +427,7 @@ class Hero(object):
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
-                        if entity.HP < entity.HP:
+                        if entity.HP < entity.HPStart:
                             print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
 
@@ -636,7 +643,7 @@ class Healer(Hero):
             for k in range(len(loctracker[i])):
                 if loctracker[i][k] != []:
                     for element in loctracker[i][k]:
-                        if element.team == self.team and element != self:
+                        if element.team == self.team and element != self and element.__class__.__name__ != "Turret" and element.__class__.__name__ != "HealthBox":
                             enemies.append([i, k])
         return enemies
 
@@ -680,41 +687,48 @@ for x in range(0, field_size):
 
 # spawn players
 players = []
-a = SpeedyBoy("Red", "Scout")
-players.append(a)
-b = RocketMan("Red", "Soldier")
-players.append(b)
-c = FireMan("Red", "Pyro")
-players.append(c)
-d = BlackDynamite("Red", "Demo")
-players.append(d)
-e = LargeWeapons("Red", "Heavy")
-players.append(e)
-f = Builder("Red", "Engie")
-players.append(f)
-g = Marksman("Red", "Sniper")
-players.append(g)
-h = Healer("Red", "Medic")
-players.append(h)
-i = Infiltrator("Red", "Spy")
-players.append(i)
+# a = SpeedyBoy("Red", "Scout")
+# players.append(a)
+# b = RocketMan("Red", "Soldier")
+# players.append(b)
+# c = FireMan("Red", "Pyro")
+# players.append(c)
+# d = BlackDynamite("Red", "Demo")
+# players.append(d)
+# e = LargeWeapons("Red", "Heavy")
+# players.append(e)
+# f = Builder("Red", "Engie")
+# players.append(f)
+# g = Marksman("Red", "Sniper")
+# players.append(g)
+# h = Healer("Red", "Medic")
+# players.append(h)
+# i = Infiltrator("Red", "Spy")
+# players.append(i)
+#
+# a1 = SpeedyBoy("Blue", "SpeedyBoy")
+# players.append(a1)
+# b1 = RocketMan("Blue", "RocketMan")
+# players.append(b1)
+# c1 = FireMan("Blue", "FireMan")
+# players.append(c1)
+# d1 = BlackDynamite("Blue", "BlackDynamite")
+# players.append(d1)
+# e1 = LargeWeapons("Blue", "LargeWeapons")
+# players.append(e1)
+# f1 = Builder("Blue", "Builder")
+# players.append(f1)
+# g1 = Marksman("Blue", "Marksman")
+# players.append(g1)
+# h1 = Healer("Blue", "Healer")
+# players.append(h1)
+# i1 = Infiltrator("Blue", "Infiltrator")
+# players.append(i1)
 
-a1 = SpeedyBoy("Blue", "SpeedyBoy")
-players.append(a1)
-b1 = RocketMan("Blue", "RocketMan")
-players.append(b1)
-c1 = FireMan("Blue", "FireMan")
-players.append(c1)
-d1 = BlackDynamite("Blue", "BlackDynamite")
-players.append(d1)
-e1 = LargeWeapons("Blue", "LargeWeapons")
-players.append(e1)
-f1 = Builder("Blue", "Builder")
-players.append(f1)
-g1 = Marksman("Blue", "Marksman")
-players.append(g1)
-h1 = Healer("Blue", "Healer")
+h1 = Builder("Red", "Builder")
 players.append(h1)
+h2 = Healer("Red", "Healer")
+players.append(h2)
 i1 = Infiltrator("Blue", "Infiltrator")
 players.append(i1)
 
