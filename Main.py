@@ -61,8 +61,16 @@ class Hero(object):
             for k in range(len(loctracker[i])):
                 if loctracker[i][k] != []:
                     for element in loctracker[i][k]:
-                        if element.team != self.team:
-                            enemies.append([i, k])
+                        if element.team != self.team or (self.HP < self.HPStart and element.team == self.team and (element.__class__.__name__ == "Healer" or element.__class__.__name__ == "HealthBox")):
+                            if self.__class__.__name__ == "Turret" and element.__class__.__name__ == "Infiltrator":
+                                pass
+                            # 50% chance of avoiding detection
+                            # healers are immune to this ability
+                            elif self.__class__.__name__ != "Healer" and element.__class__.__name__ == "Infiltrator" and ran.randint(0, 101) < 50:
+                                print(element.name + " has fooled " + self.name + " about his location")
+                                enemies.append([0, 0])
+                            else:
+                                enemies.append([i, k])
         return enemies
 
     def move(self, orig_location, new_location):
@@ -128,9 +136,7 @@ class Hero(object):
     def attack(self, damage):
         shared_location = self.locate_self()
         # check for enemies in cell for melee attack
-        for entity in loctracker[shared_location[0]][shared_location[1]]:
-            if entity.team != self.team and self.__class__.__name__ != "Turret":  # turrets can't melee!
-                self.melee_attack()
+        self.melee_attack()
         # area attack
         # top left
         if shared_location[0] - 1 >= 0 and shared_location[1] - 1 >= 0:
@@ -141,7 +147,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -157,7 +163,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -173,7 +179,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -189,7 +195,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -205,7 +211,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -221,7 +227,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -237,7 +243,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -253,7 +259,7 @@ class Hero(object):
                         print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
                         entity.HP = entity.HP - ceil(damage * 0.3)
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP")
+                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
                         entity.HP = entity.HP - damage
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
@@ -422,6 +428,7 @@ class Hero(object):
 class SpeedyBoy(Hero):
     HP = 125
     MaxHP = 185
+    HPStart = 125
 
     def attack_cfg(self):
         # damage spread
@@ -436,6 +443,7 @@ class SpeedyBoy(Hero):
 class RocketMan(Hero):
     HP = 200
     MaxHP = 300
+    HPStart = 200
 
     def attack_cfg(self):
         # damage spread
@@ -446,13 +454,14 @@ class RocketMan(Hero):
             damage *= 3
         self.attack(damage)
         # attacks inflict self-damage
-        print(self.name + " damages himself for " + str(ceil(damage * 0.1)))
+        print(self.name + " damages himself for " + str(ceil(damage * 0.1)) + " HP")
         self.HP -= ceil(damage * 0.1)
 
 
 class FireMan(Hero):
     HP = 175
     MaxHP = 255
+    HPStart = 175
 
     def attack_cfg(self):
         # damage spread
@@ -465,8 +474,9 @@ class FireMan(Hero):
 
 
 class BlackDynamite(Hero):
-    HP = 200
+    HP = 175
     MaxHP = 255
+    HPStart = 175
 
     def attack_cfg(self):
         # damage spread
@@ -477,13 +487,14 @@ class BlackDynamite(Hero):
             damage *= 3
         self.attack(damage)
         # attacks inflict self-damage
-        print(self.name + " damages himself for " + str(ceil(damage * 0.1)))
+        print(self.name + " damages himself for " + str(ceil(damage * 0.1)) + " HP")
         self.HP -= ceil(damage * 0.05)
 
 
 class LargeWeapons(Hero):
     HP = 300
     MaxHP = 440
+    HPStart = 300
 
     def attack_cfg(self):
         # damage spread
@@ -505,6 +516,7 @@ class LargeWeapons(Hero):
 class Builder(Hero):
     HP = 125
     MaxHP = 185
+    HPStart = 125
 
     def build_turret(self):
         shared_location = self.locate_self()
@@ -549,6 +561,7 @@ class Builder(Hero):
 class Turret(Hero):
     HP = 100
     MaxHP = 100
+    HPStart = 100
 
     def move(self, orig_location, new_location):
         # turrets can't move! this function duplicate is empty
@@ -564,6 +577,7 @@ class Turret(Hero):
 class HealthBox(Hero):
     HP = 100
     MaxHP = 100
+    HPStart = 100
 
     def move(self, orig_location, new_location):
         # health boxes can't move! this function duplicate is empty
@@ -577,6 +591,7 @@ class HealthBox(Hero):
 class Marksman(Hero):
     HP = 125
     MaxHP = 185
+    HPStart = 125
 
     # marksman's attack is very long-ranged. he will hit all enemy players in the same column and  row
     def attack(self, damage):
@@ -584,9 +599,7 @@ class Marksman(Hero):
         x_axis = shared_location[0]
         y_axis = shared_location[1]
         # check for enemies in cell for melee attack
-        for entity in loctracker[x_axis][y_axis]:
-            if entity.team != self.team:
-                self.melee_attack()
+        self.melee_attack()
         # area attack
         # scan x axis
         for x in range(0, field_size):
@@ -614,6 +627,7 @@ class Marksman(Hero):
 class Healer(Hero):
     HP = 150
     MaxHP = 220
+    HPStart = 150
 
     # unlike other heroes, Healer gravitates towards friendlies
     def locate_enemy(self):
@@ -623,16 +637,7 @@ class Healer(Hero):
                 if loctracker[i][k] != []:
                     for element in loctracker[i][k]:
                         if element.team == self.team and element != self:
-                            # infiltrator turret ignore
-                            if self.__class__.__name__ == "Turret" and element.__class__.__name__ == "Infiltrator":
-                                pass
-                            # 50% chance of avoiding detection
-                            # healers are immune to this ability
-                            elif self.__class__.__name__ != "Healer" and element.__class__.__name__ == "Infiltrator" and ran.randint(0, 101) < 50:
-                                print(element.name + " has fooled " + self.name + " about its location")
-                                enemies.append([0, 0])
-                            else:
-                                enemies.append([i, k])
+                            enemies.append([i, k])
         return enemies
 
     def attack_cfg(self):
@@ -653,6 +658,7 @@ class Healer(Hero):
 class Infiltrator(Hero):
     HP = 125
     MaxHP = 185
+    HPStart = 125
 
     # infiltrator's melee attacks are insta-kill. Infiltrator also instantly destroys all buildings.
     # infiltrator has a 50% chance of being ignored by enemies and 100% chance of being ignored by buildings
