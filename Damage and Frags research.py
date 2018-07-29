@@ -2,13 +2,14 @@
 Simple multi-player game with various characters
 """
 import numpy.random as ran
+from collections import Counter
 import random
 from pandas import *
 import sys
 import copy
 from math import sqrt, ceil
-
-field_size = 5
+import operator
+field_size = 10
 
 
 def longest(lst):
@@ -70,14 +71,9 @@ class Hero(object):
                             # healers are immune to this ability
                             elif self.__class__.__name__ != "Healer" and element.__class__.__name__ == "Infiltrator" and ran.randint(
                                     0, 101) < 50:
-                                print(element.name + " has fooled " + self.name + " about his location")
                                 enemies.append([0, 0])
                             else:
                                 enemies.append([i, k])
-                                if element.team == self.team and (
-                                        self.__class__.__name__ != "Turret" and self.__class__.__name__ != "HealthBox") and (
-                                        element.__class__.__name__ == "Healer" or element.__class__.__name__ == "HealthBox"):
-                                    print(self.name + " has considered visiting " + element.name)
         return enemies
 
     def move(self, orig_location, new_location):
@@ -129,15 +125,25 @@ class Hero(object):
             if entity.team != self.team:
                 # infiltrator instakill
                 if self.__class__.__name__ == "Infiltrator":
-                    print(self.name + " performs spinal tap, instantly taking out " + entity.name + "!")
+                    # log infiltrator's damaged caused an the remaining enemy HP
+                    total_damage[self.__class__.__name__] += entity.HP
                     entity.HP = -1
+                    # add 1 frag to Infiltrator's frag count
+                    total_frags[self.__class__.__name__] += 1
                 # roll for crit hit
                 elif ran.randint(1, 101) < 15:
-                    print(self.name + " rolled a Melee CRIT on " + entity.name + " for 195 HP!")
+                    total_damage[self.__class__.__name__] += 195
                     entity.HP = entity.HP - 195
+                    # check if the enemy is at or below 0 hp
+                    if entity.HP <= 0:
+                        total_frags[self.__class__.__name__] += 1
                 else:
-                    print(self.name + " performs a melee attack on " + entity.name + " 65 HP!")
+                    total_damage[self.__class__.__name__] += 65
                     entity.HP = entity.HP - 65
+                    # check if the enemy is at or below 0 hp
+                    if entity.HP <= 0:
+                        total_frags[self.__class__.__name__] += 1
+
 
     def attack(self, damage):
         shared_location = self.locate_self()
@@ -151,128 +157,168 @@ class Hero(object):
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # middle left
         if shared_location[0] - 1 >= 0:
             for entity in loctracker[shared_location[0] - 1][shared_location[1]]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # bottom left
         if shared_location[0] - 1 >= 0 and shared_location[1] + 1 < field_size:
             for entity in loctracker[shared_location[0] - 1][shared_location[1] + 1]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # bottom middle
         if shared_location[1] + 1 < field_size:
             for entity in loctracker[shared_location[0]][shared_location[1] + 1]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # bottom right
         if shared_location[0] + 1 < field_size and shared_location[1] + 1 < field_size:
             for entity in loctracker[shared_location[0] + 1][shared_location[1] + 1]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # right center
         if shared_location[0] + 1 < field_size:
             for entity in loctracker[shared_location[0] + 1][shared_location[1]]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # right top
         if shared_location[0] + 1 < field_size and shared_location[1] - 1 >= 0:
             for entity in loctracker[shared_location[0] + 1][shared_location[1] - 1]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
         # top centre
         if shared_location[1] - 1 >= 0:
             for entity in loctracker[shared_location[0]][shared_location[1] - 1]:
                 if entity.team != self.team:
                     # FireMen can resist each other's attacks
                     if self.__class__.__name__ == "FireMan" and entity.__class__.__name__ == "FireMan":
-                        print(self.name + " barely burns " + entity.name + " for " + str(damage) + " damage")
+                        total_damage[self.__class__.__name__] += ceil(damage * 0.3)
                         entity.HP = entity.HP - ceil(damage * 0.3)
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     else:
-                        print(self.name + " damages " + entity.name + " for " + str(damage) + " HP!")
+                        total_damage[self.__class__.__name__] += damage
                         entity.HP = entity.HP - damage
+                        if entity.HP <= 0:
+                            total_frags[self.__class__.__name__] += 1
                     # infiltrator instant building destroy
                     if self.__class__.__name__ == "Infiltrator" and (
                             entity.__class__.__name__ == "Turret" or entity.__class__.__name__ == "HealthBox"):
-                        print(self.name + " hacks " + entity.name + ", taking it out instantly!")
                         entity.HP = -1
+                        # do not credit the infiltrator for damage done, but add to his frag count
+                        total_frags[self.__class__.__name__] += 1
 
     def heal(self):
         shared_location = self.locate_self()
@@ -285,13 +331,11 @@ class Hero(object):
                 # healer logic
                 if self.__class__.__name__ == "Healer":
                     if entity.HP < entity.MaxHP:
-                        print(self.name + " heals " + entity.name + " for 20 HP")
                         entity.HP = entity.HP + 20
                 else:
                     # healthbox logic
                     # healthboxes can't overheal
                     if entity.HP < entity.HPStart:
-                        print(self.name + " heals " + entity.name + " for 10 HP")
                         entity.HP = entity.HP + 10
         # area heal
         # top left
@@ -303,13 +347,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # middle left
         if shared_location[0] - 1 >= 0:
@@ -320,13 +362,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # bottom left
         if shared_location[0] - 1 >= 0 and shared_location[1] + 1 < field_size:
@@ -337,13 +377,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # bottom middle
         if shared_location[1] + 1 < field_size:
@@ -354,13 +392,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # bottom right
         if shared_location[0] + 1 < field_size and shared_location[1] + 1 < field_size:
@@ -371,13 +407,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # right center
         if shared_location[0] + 1 < field_size:
@@ -388,13 +422,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # right top
         if shared_location[0] + 1 < field_size and shared_location[1] - 1 >= 0:
@@ -405,13 +437,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
         # top centre
         if shared_location[1] - 1 >= 0:
@@ -422,13 +452,11 @@ class Hero(object):
                     # healer logic
                     if self.__class__.__name__ == "Healer":
                         if entity.HP < entity.MaxHP:
-                            print(self.name + " heals " + entity.name + " for 20 HP")
                             entity.HP = entity.HP + 20
                     else:
                         # healthbox logic
                         # healthboxes can't overheal
                         if entity.HP < entity.HPStart:
-                            print(self.name + " heals " + entity.name + " for 10 HP")
                             entity.HP = entity.HP + 10
 
 
@@ -442,7 +470,6 @@ class SpeedyBoy(Hero):
         damage = ran.randint(3, 105)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
 
@@ -457,11 +484,9 @@ class RocketMan(Hero):
         damage = ran.randint(24, 112)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
         # attacks inflict self-damage
-        print(self.name + " damages himself for " + str(ceil(damage * 0.1)) + " HP")
         self.HP -= ceil(damage * 0.1)
 
 
@@ -475,7 +500,6 @@ class FireMan(Hero):
         damage = ran.randint(30, 120)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
 
@@ -490,11 +514,9 @@ class BlackDynamite(Hero):
         damage = ran.randint(30, 101)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
         # attacks inflict self-damage
-        print(self.name + " damages himself for " + str(ceil(damage * 0.1)) + " HP")
         self.HP -= ceil(damage * 0.05)
 
 
@@ -509,13 +531,11 @@ class LargeWeapons(Hero):
         # if damaged, can randomly heal himself to full health, skipping attacks
         if ran.randint(1, 101) < 20 and self.HP < 300:
             # self-heal logic
-            print(self.name + " consumed hamburger to heal to full health and skips a turn.")
             self.HP = 300
         else:
             # attack logic
             # crit chance
             if ran.randint(1, 101) < 4:
-                print(self.name + " rolled a crit on his ranged attack!")
                 damage *= 3
             self.attack(damage)
 
@@ -530,21 +550,18 @@ class Builder(Hero):
         turr = Turret(self.team, "Turret")
         players.append(turr)
         loctracker[shared_location[0]][shared_location[1]].append(turr)
-        print(self.team + " " + self.name + " has deployed a Turret")
 
     def build_healthbox(self):
         shared_location = self.locate_self()
         healthb = HealthBox(self.team, "HealthBox")
         players.append(healthb)
         loctracker[shared_location[0]][shared_location[1]].append(healthb)
-        print(self.team + " " + self.name + " has deployed a HealthBox")
 
     def attack_cfg(self):
         # damage spread
         damage = ran.randint(3, 90)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
         # builder may randomly spawn buildings
@@ -612,21 +629,24 @@ class Marksman(Hero):
         for x in range(0, field_size):
             for entity in loctracker[x][y_axis]:
                 if entity.team != self.team:
-                    print(self.name + " snipes " + entity.name + " for " + str(damage) + " damage!")
+                    total_damage[self.__class__.__name__] += damage
                     entity.HP = entity.HP - damage
+                    if entity.HP <= 0:
+                        total_frags[self.__class__.__name__] += 1
         # scan y axis
         for y in range(0, field_size):
             for entity in loctracker[x_axis][y]:
                 if entity.team != self.team:
-                    print(self.name + " snipes " + entity.name + " for " + str(damage) + " damage!")
+                    total_damage[self.__class__.__name__] += damage
                     entity.HP = entity.HP - damage
+                    if entity.HP <= 0:
+                        total_frags[self.__class__.__name__] += 1
 
     def attack_cfg(self):
         # damage spread
         damage = ran.randint(50, 151)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
 
@@ -653,7 +673,6 @@ class Healer(Hero):
         damage = ran.randint(50, 151)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
         self.heal()
@@ -675,120 +694,149 @@ class Infiltrator(Hero):
         damage = ran.randint(20, 50)
         # crit chance
         if ran.randint(1, 101) < 4:
-            print(self.name + " rolled a crit on his ranged attack!")
             damage *= 3
         self.attack(damage)
 
 
-# generate board
-loctracker = []
-for x in range(0, field_size):
-    loctracker.append([[] for _ in range(field_size)])
+# game looper
+game_count = 0
+results = []
 
-# spawn players
-players = []
-# a = SpeedyBoy("Red", "Scout")
-# players.append(a)
-# b = RocketMan("Red", "Soldier")
-# players.append(b)
-# c = FireMan("Red", "Pyro")
-# players.append(c)
-# d = BlackDynamite("Red", "Demo")
-# players.append(d)
-# e = LargeWeapons("Red", "Heavy")
-# players.append(e)
-# f = Builder("Red", "Engie")
-# players.append(f)
-# g = Marksman("Red", "Sniper")
-# players.append(g)
-# h = Healer("Red", "Medic")
-# players.append(h)
-# i = Infiltrator("Red", "Spy")
-# players.append(i)
-#
-# a1 = SpeedyBoy("Blue", "SpeedyBoy")
-# players.append(a1)
-# b1 = RocketMan("Blue", "RocketMan")
-# players.append(b1)
-# c1 = FireMan("Blue", "FireMan")
-# players.append(c1)
-# d1 = BlackDynamite("Blue", "BlackDynamite")
-# players.append(d1)
-# e1 = LargeWeapons("Blue", "LargeWeapons")
-# players.append(e1)
-# f1 = Builder("Blue", "Builder")
-# players.append(f1)
-# g1 = Marksman("Blue", "Marksman")
-# players.append(g1)
-# h1 = Healer("Blue", "Healer")
-# players.append(h1)
-# i1 = Infiltrator("Blue", "Infiltrator")
-# players.append(i1)
+# stat collection dicts
+total_damage = {"SpeedyBoy": 0, "RocketMan": 0, "FireMan": 0, "BlackDynamite": 0, "LargeWeapons": 0, "Builder": 0,
+                "Marksman": 0, "Healer": 0, "Infiltrator": 0, "Turret":0}
+total_frags = {"SpeedyBoy": 0, "RocketMan": 0, "FireMan": 0, "BlackDynamite": 0, "LargeWeapons": 0, "Builder": 0,
+                "Marksman": 0, "Healer": 0, "Infiltrator": 0, "Turret":0}
 
-h1 = Builder("Red", "Builder")
-players.append(h1)
-h2 = Healer("Red", "Healer")
-players.append(h2)
-i1 = Infiltrator("Blue", "Infiltrator")
-players.append(i1)
+while game_count <= 10000:
+    # generate board
+    loctracker = []
+    for x in range(0, field_size):
+        loctracker.append([[] for _ in range(field_size)])
 
-random.shuffle(players)
-
-for player in players:
-    player.spawn()
-
-# match prep
-round_counter = 1
-print("Round #" + str(round_counter) + "...")
-round_counter += 1
-print_board(loctracker)
-round_over = 0
-stalemate = 0
-while round_over == 0:
-    print("Round #" + str(round_counter) + "...")
-    round_counter += 1
-    # calculate remaining teams
-    teams_remaining = []
-    for player in players:
-        teams_remaining.append(player.team)
-    if len(set(teams_remaining)) <= 1:
-        round_over = 1
-        break
-    if round_counter == 101:
-        stalemate = 1
-        break
-    # have all players make their move
-    for player in players:
-        print(player.team + " " + player.name + " move:")
-        try:
-            player.move(player.locate_self(), player.new_location_calc(player.locate_self(), player.locate_enemy()))
-        except:  # if move failed, it's probably a lonely Healer remaining. let him stand in place.
+    players = []
+    # init Red players
+    red = []
+    while len(red) < 9:
+        # roll for a random character to spawn
+        random_red = ran.randint(0, 9)
+        if random_red == 0:
+            red.append(SpeedyBoy("Red", "SpeedyBoy"))
+        elif random_red == 1:
+            red.append(RocketMan("Red", "RocketMan"))
+        elif random_red == 2:
+            red.append(FireMan("Red", "FireMan"))
+        elif random_red == 3:
+            red.append(BlackDynamite("Red", "BlackDynamite"))
+        elif random_red == 4:
+            red.append(LargeWeapons("Red", "LargeWeapons"))
+        elif random_red == 5:
+            red.append(Builder("Red", "Builder"))
+        elif random_red == 6:
+            red.append(Healer("Red", "Healer"))
+        elif random_red == 7:
+            red.append(Marksman("Red", "Marksman"))
+        elif random_red == 8:
+            red.append(Infiltrator("Red", "Infiltrator"))
+        else:
             pass
-        player.attack_cfg()
-        print_board(loctracker)
-        # clean up the bodies after the move
+    players.extend(red)
+
+    # init Blue
+    blue = []
+    # keep running the random class select until we get 6 bots
+    while len(blue) < 9:
+        # roll for a random character to spawn
+        random_blue = ran.randint(0, 9)
+        if random_blue == 0:
+            blue.append(SpeedyBoy("Blue", "SpeedyBoy"))
+        elif random_blue == 1:
+            blue.append(RocketMan("Blue", "RocketMan"))
+        elif random_blue == 2:
+            blue.append(FireMan("Blue", "FireMan"))
+        elif random_blue == 3:
+            blue.append(BlackDynamite("Blue", "BlackDynamite"))
+        elif random_blue == 4:
+            blue.append(LargeWeapons("Blue", "LargeWeapons"))
+        elif random_blue == 5:
+            blue.append(Builder("Blue", "Builder"))
+        elif random_blue == 6:
+            blue.append(Healer("Blue", "Healer"))
+        elif random_blue == 7:
+            blue.append(Marksman("Blue", "Marksman"))
+        elif random_blue == 8:
+            blue.append(Infiltrator("Blue", "Infiltrator"))
+        else:
+            pass
+
+    # add the selected classes to the player list
+    # print("Blue composition:" + str(blue))
+    players.extend(blue)
+
+    # randomize the move order
+    random.shuffle(players)
+
+    # spawn all players
+    for player in players:
+        player.spawn()
+
+    # match reset
+    round_counter = 0
+    round_over = 0
+    stalemate = 0
+    while round_over == 0:
+        round_counter += 1
+        # calculate remaining teams
+        teams_remaining = []
         for player in players:
-            if player.HP <= 0:
-                # remove from player list
-                players.remove(player)
-                # remove from teh board
-                for i in range(len(loctracker)):
-                    for k in range(len(loctracker[i])):
-                        if loctracker[i][k] != []:
-                            for element in loctracker[i][k]:
-                                if element == player:
-                                    loctracker[i][k].remove(player)
-                # remove from memory
-                del player
-            # check if there is only one team standing
-            teams_remaining = []
+            teams_remaining.append(player.team)
+        if len(set(teams_remaining)) <= 1:
+            round_over = 1
+            break
+        if round_counter == 101:
+            stalemate = 1
+            break
+        # have all players make their move
+        for player in players:
+            try:
+                player.move(player.locate_self(), player.new_location_calc(player.locate_self(), player.locate_enemy()))
+            except:  # if move failed, it's probably a lonely Healer remaining. let him stand in place.
+                pass
+            player.attack_cfg()
+            # clean up the bodies after the move
             for player in players:
-                teams_remaining.append(player.team)
-            if len(set(teams_remaining)) <= 1:
-                round_over = 1
-                break
-if stalemate:
-    print("GAME OVER: STALEMATE!")
-else:
-    print("GAME OVER: " + players[0].team + " WINS!")
-print_board(loctracker)
+                if player.HP <= 0:
+                    # remove from player list
+                    players.remove(player)
+                    # remove from teh board
+                    for i in range(len(loctracker)):
+                        for k in range(len(loctracker[i])):
+                            if loctracker[i][k] != []:
+                                for element in loctracker[i][k]:
+                                    if element == player:
+                                        loctracker[i][k].remove(player)
+                    # remove from memory
+                    del player
+                # check if there is only one team standing
+                teams_remaining = []
+                for player in players:
+                    teams_remaining.append(player.team)
+                if len(set(teams_remaining)) <= 1:
+                    round_over = 1
+                    break
+    # print_board(loctracker)
+    if stalemate:
+        # ignore game results if a stalemate occured
+        pass
+    else:
+        results.append(players[0].team)
+    print("Finished game #" + str(game_count))
+    game_count += 1
+
+sorted_frags = sorted(total_frags.items(), key=operator.itemgetter(1))
+sorted_damage = sorted(total_damage.items(), key=operator.itemgetter(1))
+
+print("TOTAL FRAGS:")
+print(DataFrame(sorted_frags))
+print("TOTAL DAMAGE:")
+print(DataFrame(sorted_damage))
