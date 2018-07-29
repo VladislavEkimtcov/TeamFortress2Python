@@ -4,7 +4,7 @@
 Vladislav Ekimtcov
 
 # Monte Carlo Simulation Scenario & Purpose:
-This Python program simulates a match in Team Fortress 2, a popular video game developed by Valve Corporation. There is no objective besides eliminating the enemy team. 
+This Python program simulates a match in Team Fortress 2, a popular video game developed by Valve Corporation. There is no objective in this simulation besides eliminating the enemy team. 
 
 The primary goal of the simulation is to answer questions I had about Team Fortress 2 for the last nine years.
 
